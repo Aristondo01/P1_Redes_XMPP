@@ -1,4 +1,16 @@
 
+
+def get_User_Password():
+    valido = False
+    while not valido:
+        user = input("Ingrese el nombre de usuario: ")
+        password = input("Ingrese la contraseña: ")
+        if user != "" and password != "":
+            valido = True
+        else:
+            print("\033[31m\nNo se pueden dejar campos vacíos\033[37m")
+    return user, password
+
 def menu_principal():
     valido = False
     while not valido:
