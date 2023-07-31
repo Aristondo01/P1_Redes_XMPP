@@ -1,10 +1,11 @@
 
 
-def get_User_Password():
+def get_User_Password(accion):
     valido = False
     while not valido:
-        user = input("Ingrese el nombre de usuario: ")
-        password = input("Ingrese la contraseña: ")
+        print("\033[32m"+accion)
+        user = input("Ingrese el nombre de usuario: \033[0m")
+        password = input("\033[32mIngrese la contraseña: \033[0m")
         if user != "" and password != "":
             valido = True
         else:
