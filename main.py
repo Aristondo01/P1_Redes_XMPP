@@ -31,6 +31,11 @@ def menu_manager():
         cliente.connect(disable_starttls=True)
         cliente.process(forever=False)
         #----------------
+    
+    elif op == 3:
+        user,password = tm.get_User_Password("Ingrese los datos para borrar su cuenta")
+        
+        
         
 
 

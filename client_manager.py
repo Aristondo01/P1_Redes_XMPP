@@ -3,10 +3,9 @@ import slixmpp
 import xmpp
 from slixmpp.exceptions import IqError, IqTimeout
 import text_manager as tm
-from aioconsole import ainput
 import asyncio
-from asyncio import Future
-
+from aioconsole import ainput
+from aioconsole.stream import aprint
 
 def register(client, password):
 
@@ -26,6 +25,7 @@ class client(slixmpp.ClientXMPP):
     def __init__(self,user,password):
         super().__init__(user,password)
         self.name = user.split('@')[0]
+        self.name_domain = user
         self.is_connected = False
         
         
@@ -67,14 +67,56 @@ class client(slixmpp.ClientXMPP):
             print("\033[31mError:\n",e,"\033[0m")
             self.is_connected = False
             self.disconnect()
-            
     
+    
+    async def estado_contactos(self):
+        # Sugerencia de Copilot
+        #-------------------------
+        roster = self.client_roster
+        concats = roster.keys()
+        concats = [jid for jid in roster.keys() if jid != self.name_domain]
+
+        #-------------------------
+        
+        Lista_contactos = []
+        
+        if not concats:
+            print("\033[38;5;208mLista de contactos vacía\033[0m")
+            return
+            
+        for u in concats:
+            conn = roster.presence(u)
+            show = '\033[92mDisponible \033[0m'
+            status = ''
+            
+            for answer, pres in conn.items():
+                if pres['show']:
+                    show = pres['show']
+                status = pres['status']
+                
+                if show == 'dnd':
+                    show = '\033[31mOcupado\033[0m'
+                if show == 'xa':
+                    show = '\033[31mNo disponible\033[0m'
+                if show == 'away':
+                    show = '\033[38;5;208mAusente\033[0m'
+            
+            Lista_contactos.append((u,show,status))
+        print('\n\033[92mLista de contactos:\033[0m')
+        for i in range(len(Lista_contactos)):
+            print('\033[38;5;208m',i+1,')\033[96m',end =" ")
+            print('Contacto: ',Lista_contactos[i][0],end =" ---> ")
+            print('Estado:',Lista_contactos[i][1],'\033[96m Mensaje:',Lista_contactos[i][2])
+        print('\n')
+        
     async def async_menu(self):
         
         while self.is_connected:
-            tm.menu_comunicacion()
-            op = await ainput ("\033[36mIngrese la opción que desea: \033[0m")
-            print("La opción ingresada es: ",op)
+            op = await tm.menu_comunicacion()
+            
+            if op == 1:
+                await self.estado_contactos()
+            
             
         
         

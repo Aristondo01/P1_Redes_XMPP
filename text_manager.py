@@ -1,4 +1,5 @@
-
+from aioconsole import ainput
+from aioconsole.stream import aprint
 
 def get_User_Password(accion):
     valido = False
@@ -47,7 +48,7 @@ def menu_login(primera_vez):
             
     return int(opcion)
     
-def menu_comunicacion():
+async def menu_comunicacion():
     valido = False
     while not valido:
         print("\033[32m\nBienvenido a la comunicación \033[0m")
@@ -61,7 +62,7 @@ def menu_comunicacion():
         print("7. Enviar/recibir notificaciones")
         print("8. Enviar/recibir archivos")
         print("9. Regresar al menú principal")
-        opcion = input("Ingrese la opción que desea: \033[0m")
+        opcion = await ainput("Ingrese la opción que desea: \033[0m")
         
         if opcion == "1" or opcion == "2" or opcion == "3" or opcion == "4" or opcion == "5" or opcion == "6" or opcion == "7" or opcion == "8" or opcion == "9":
             valido = True
