@@ -70,6 +70,36 @@ class client(slixmpp.ClientXMPP):
             self.is_connected = False
             self.disconnect()
     
+    def print_async(self, text):
+        print("\033[38;2;0;255;255m"+text+"\033[0m")
+            
+    async def cambiar_mensaje_estado(self):
+        mensaje = input("\033[32mIngresa el mensaje de estado: \033[0m")
+        print("\033[32mQue status desea colocar?")
+        valid = False
+        while not valid:
+            print('\033[31m1.Ocupado\033[0m')
+            print('\033[31m2.No disponible\033[0m')
+            print('\033[38;5;208m3.Ausente\033[0m')
+            print('\033[92m4.Disponible\033[0m')
+            inp = input("\033[32mIngresa el número de la opción: \033[0m")
+            
+            if inp == "1" or inp == "2" or inp == "3" or inp == "4":
+                valid = True
+        pshow_i= ""
+        if inp == "1":
+            pshow_i = "dnd"
+        elif inp == "2":
+            pshow_i = "xa"
+        elif inp == "3":
+            pshow_i = "away"
+        elif inp == "4":
+            pshow_i = ""
+            
+             
+        self.send_presence(pshow = pshow_i, pstatus = mensaje)
+        print("\033[32mMensaje de estado cambiado con éxito\033[0m")
+    
     
     async def estado_contactos(self):
         # Sugerencia de Copilot
@@ -88,20 +118,25 @@ class client(slixmpp.ClientXMPP):
             
         for u in concats:
             conn = roster.presence(u)
-            show = '\033[92mDisponible \033[0m'
+            show = '\033[90mDesconectado \033[0m'
             status = ''
             
             for answer, pres in conn.items():
-                if pres['show']:
-                    show = pres['show']
+                if pres:
+                    pres_show = pres['show']
+                
                 status = pres['status']
                 
-                if show == 'dnd':
+                if pres_show == 'dnd':
                     show = '\033[31mOcupado\033[0m'
-                if show == 'xa':
+                if pres_show == 'xa':
                     show = '\033[31mNo disponible\033[0m'
-                if show == 'away':
+                if pres_show == 'away':
                     show = '\033[38;5;208mAusente\033[0m'
+                if pres_show == '':
+                    show = '\033[92mDisponible\033[0m'
+                
+                
             
             Lista_contactos.append((u,show,status))
         print('\n\033[92mLista de contactos:\033[0m')
@@ -151,6 +186,15 @@ class client(slixmpp.ClientXMPP):
                 await self.estado_contactos()
             if op == 2:
                 await self.agregar_contacto()
+            if op == 3:
+                pass
+            if op == 4:
+                pass
+            if op == 5:
+                pass
+            if op == 6:
+                await self.cambiar_mensaje_estado()
+                
             
             
         
