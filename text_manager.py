@@ -28,7 +28,7 @@ def menu_principal():
             print("\033[31m\nOpción inválida\033[37m")
     return int(opcion)
 
-def menu_login():
+def menu_login(primera_vez):
     valido = False
     while not valido:
         print("\033[32m\nBienvenido a la administración de usuarios \033[0m")
@@ -36,9 +36,11 @@ def menu_login():
         print("1. Registrar nueva cuenta")
         print("2. Iniciar sesión")
         print("3. Eliminar cuenta")
+        if not primera_vez:
+            print("5. Regresar al menú principal")
         opcion = input("Ingrese la opción que desea: \033[0m")
         
-        if opcion == "1" or opcion == "2" or opcion == "3":
+        if opcion == "1" or opcion == "2" or opcion == "3" or (opcion == "4" and not primera_vez):
             valido = True
         else:
             print("\033[31m Opción inválida\033[37m")
