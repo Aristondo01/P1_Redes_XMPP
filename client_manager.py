@@ -7,6 +7,8 @@ import asyncio
 from aioconsole import ainput
 from aioconsole.stream import aprint
 import threading
+import time
+import random
 
 def register(client, password):
 
@@ -27,6 +29,7 @@ class client(slixmpp.ClientXMPP):
         super().__init__(user,password)
         self.name = user.split('@')[0]
         self.name_domain = user
+        self.notificacion = []
         self.is_connected = False    
         
         self.register_plugin('xep_0030') # Service Discovery
@@ -52,8 +55,8 @@ class client(slixmpp.ClientXMPP):
             self.is_connected = True
             print("\033[32mInicio de sesión exitoso\033[0m")
             
+            asyncio.create_task(self.print_async())
             asyncio.create_task(self.async_menu())
-            #asyncio.create_task(self.thread_init())
             
             
         except IqError as errorIE:
@@ -69,9 +72,15 @@ class client(slixmpp.ClientXMPP):
             print("\033[31mError:\n",e,"\033[0m")
             self.is_connected = False
             self.disconnect()
+            
     
-    def print_async(self, text):
-        print("\033[38;2;0;255;255m"+text+"\033[0m")
+    
+    async def print_async(self):
+        while True:
+            await asyncio.sleep(0.1)
+            if random.randint(0,8) == 2:
+                await aprint("\033[38;2;0;255;255m\n"+"Notificacion falsa"+"\n\033[32m")
+            time.sleep(4)
             
     async def cambiar_mensaje_estado(self):
         mensaje = input("\033[32mIngresa el mensaje de estado: \033[0m")
@@ -153,7 +162,7 @@ class client(slixmpp.ClientXMPP):
         
         
     async def agregar_contacto(self):
-        user_add = input("Ingresa el nombre del usuario que deseas agregar (sin @alumchat.xyz): ")+ '@alumchat.xyz'
+        user_add = input("\033[96mIngresa el nombre del usuario que deseas agregar (sin @alumchat.xyz): \033[0m")+ '@alumchat.xyz'
         
         try:
             self.send_presence_subscription(pto = user_add)
@@ -163,15 +172,18 @@ class client(slixmpp.ClientXMPP):
             print(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
         except IqTimeout:
             print("\033[31mError:\nSe ha excedido el tiempo de respuesta\033[0m")
+            
+    async def change_user(self,name):
+        self.notificacion.append(name)
     
     async def suscripcion_entrante(self,presence):
-        print(f"Recibida solicitud de suscripción de {presence['from']}")
         if presence['type'] == 'subscribe':
             # Automatically accept the subscription request
             try:
                 self.send_presence_subscription(pto=presence['from'], ptype='subscribed')
                 await self.get_roster()
-                print(f"Accepted subscription request from {presence['from']}")
+                await self.change_user(presence['from'])
+                await aprint(f"Accepted subscription request from {presence['from']}")
             except IqError as e:
                 print(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
             except IqTimeout:
