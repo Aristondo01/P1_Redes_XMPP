@@ -101,6 +101,24 @@ class client(slixmpp.ClientXMPP):
         print("\033[32mMensaje de estado cambiado con éxito\033[0m")
     
     
+    async def estado_mensaje(self,pres):
+        if pres:
+            pres_show = pres['show']
+                
+        status = pres['status']
+        
+        if pres_show == 'dnd':
+            show = '\033[31mOcupado\033[0m'
+        if pres_show == 'xa':
+            show = '\033[31mNo disponible\033[0m'
+        if pres_show == 'away':
+            show = '\033[38;5;208mAusente\033[0m'
+        if pres_show == '':
+            show = '\033[92mDisponible\033[0m'
+            
+        return show,status
+        
+    
     async def estado_contactos(self):
         # Sugerencia de Copilot
         #-------------------------
@@ -119,25 +137,12 @@ class client(slixmpp.ClientXMPP):
         for u in concats:
             conn = roster.presence(u)
             show = '\033[90mDesconectado \033[0m'
-            status = ''
+            status = '\033[90mNo visible \033[0m'
             
             for answer, pres in conn.items():
-                if pres:
-                    pres_show = pres['show']
-                
-                status = pres['status']
-                
-                if pres_show == 'dnd':
-                    show = '\033[31mOcupado\033[0m'
-                if pres_show == 'xa':
-                    show = '\033[31mNo disponible\033[0m'
-                if pres_show == 'away':
-                    show = '\033[38;5;208mAusente\033[0m'
-                if pres_show == '':
-                    show = '\033[92mDisponible\033[0m'
+                show,status = await self.estado_mensaje(pres)
                 
                 
-            
             Lista_contactos.append((u,show,status))
         print('\n\033[92mLista de contactos:\033[0m')
         for i in range(len(Lista_contactos)):
@@ -172,10 +177,27 @@ class client(slixmpp.ClientXMPP):
             except IqTimeout:
                 print("No response from server.")
                 
-    async def thread_init(self):
-        hilo1 = threading.Thread(target=self.async_menu)
-        hilo1.start()
-        hilo1.join()
+    async def contaco_specifico(self):
+        contacto = input("\033[36mIngresa el nombre del contacto que deseas agregar (sin @alumchat.xyz): \033[0m")
+        contacto+='@alumchat.xyz'
+        roster = self.client_roster
+        contactos = roster.keys()
+        
+        if contacto not in contactos:
+            print("\033[31mEl contacto no esta en tu lista :(\033[0m")
+        else:
+            conn = roster.presence(contacto)
+            show = '\033[90mDesconectado \033[0m'
+            status = '\033[90mNo visible \033[0m'
+            
+            for answer, pres in conn.items():
+                show,status = await self.estado_mensaje(pres)
+                
+                
+            print('\033[38;5;208mContacto solicitado: \033[96m',contacto,end =" ---> ")
+            print('Estado:',show,'\033[96m Mensaje:',status)
+            
+            
         
     async def async_menu(self):
         
@@ -187,7 +209,7 @@ class client(slixmpp.ClientXMPP):
             if op == 2:
                 await self.agregar_contacto()
             if op == 3:
-                pass
+                await self.contaco_specifico()
             if op == 4:
                 pass
             if op == 5:
