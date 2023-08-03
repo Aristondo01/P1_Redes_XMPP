@@ -173,9 +173,9 @@ class client(slixmpp.ClientXMPP):
                 await self.get_roster()
                 print(f"Accepted subscription request from {presence['from']}")
             except IqError as e:
-                print(f"Error accepting subscription request: {e.iq['error']['text']}")
+                print(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
             except IqTimeout:
-                print("No response from server.")
+                print("\033[31mError:\nSe ha excedido el tiempo de respuesta\033[0m")
                 
     async def contaco_specifico(self):
         contacto = input("\033[36mIngresa el nombre del contacto que deseas agregar (sin @alumchat.xyz): \033[0m")

@@ -3,16 +3,15 @@ import asyncio
 import slixmpp
 import client_manager
 from client_manager import client
+from delete_client import Delete_Cliente
 def menu_manager():
     
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     
     log_in = False
-    primera_vez = True
     finish = False
     #while not finish:
-    op = tm.menu_login(primera_vez)
-    primera_vez = False
+    op = tm.menu_login()
     
     if op == 1:
         user,password = tm.get_User_Password("Ingrese los datos a registrar")
@@ -34,6 +33,10 @@ def menu_manager():
     
     elif op == 3:
         user,password = tm.get_User_Password("Ingrese los datos para borrar su cuenta")
+        user= "aristondo20880"+ user + '@alumchat.xyz'
+        d_client = Delete_Cliente(user,password)
+        d_client.connect(disable_starttls=True)
+        d_client.process(forever=False)
         
         
         
