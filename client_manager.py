@@ -45,6 +45,7 @@ class client(slixmpp.ClientXMPP):
         self.add_event_handler('subscription_request', self.suscripcion_entrante)
         
         
+        
     
     
     async def LogIn(self,event):
@@ -54,7 +55,8 @@ class client(slixmpp.ClientXMPP):
             await self.get_roster()
             self.is_connected = True
             print("\033[32mInicio de sesión exitoso\033[0m")
-            
+            roster = self.client_roster
+            self.amigos = [jid.split("@")[0] for jid in roster.keys() if jid != self.name_domain]            
             asyncio.create_task(self.print_async())
             asyncio.create_task(self.async_menu())
             
@@ -78,9 +80,25 @@ class client(slixmpp.ClientXMPP):
     async def print_async(self):
         while True:
             await asyncio.sleep(0.1)
-            if random.randint(0,3) == 2:
-                await aprint("\033[38;2;0;255;255m\n"+"Notificacion falsa"+"\n\033[32m")
+            #if random.randint(0,3) == 2:
+            #    await aprint("\033[38;2;0;255;255m\n"+"Notificacion falsa"+"\n\033[32m")
+            
+            await self.get_roster()
+            roster = self.client_roster
+            concats = [jid.split("@")[0] for jid in roster.keys() if jid != self.name_domain]
+            if concats == self.amigos:
+                continue
+            else:
+                for jid in concats:
+                    if jid not in self.amigos:
+                        await aprint("\033[38;2;0;255;255m\nNotificación :Se ha agregado a",jid.split("@")[0],"\033[0m\n")
+                        self.amigos.append(jid)
+                self.amigos = concats
+                
             time.sleep(4)
+            
+    async def signal_handler(self,signal,frame):
+        self.disconnect()
             
     async def cambiar_mensaje_estado(self):
         mensaje = input("\033[32mIngresa el mensaje de estado: \033[0m")
@@ -231,8 +249,6 @@ class client(slixmpp.ClientXMPP):
             if op == 7:
                 pass
             if op == 8:
-                pass
-            if op == 9:
                 print("\033[31mCerrando sesión...\033[0m")
                 self.disconnect()
                 self.is_connected = False

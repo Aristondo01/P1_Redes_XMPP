@@ -37,7 +37,7 @@ def menu_login(primera_vez):
         print("2. Iniciar sesión")
         print("3. Eliminar cuenta")
         if not primera_vez:
-            print("5. Regresar al menú principal")
+            print("4. Cerrar programa")
         opcion = input("Ingrese la opción que desea: \033[0m")
         
         if opcion == "1" or opcion == "2" or opcion == "3" or (opcion == "4" and not primera_vez):
@@ -58,12 +58,11 @@ async def menu_comunicacion():
         print("4. Comunicación 1 a 1 con cualquier usuario/contacto")
         print("5. Participar en conversaciones grupales")
         print("6. Definir mensaje de presencia")
-        print("7. Enviar/recibir notificaciones")
-        print("8. Enviar/recibir archivos")
-        print("9. Cerrar sesión")
+        print("7. Enviar archivos")
+        print("8. Cerrar sesión")
         opcion = await ainput("Ingrese la opción que desea: \033[0m")
         
-        if opcion == "1" or opcion == "2" or opcion == "3" or opcion == "4" or opcion == "5" or opcion == "6" or opcion == "7" or opcion == "8" or opcion == "9":
+        if opcion == "1" or opcion == "2" or opcion == "3" or opcion == "4" or opcion == "5" or opcion == "6" or opcion == "7" or opcion == "8" :
             valido = True
         else:
             print("\033[31m Opción inválida\033[37m")
