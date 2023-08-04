@@ -78,7 +78,7 @@ class client(slixmpp.ClientXMPP):
     async def print_async(self):
         while True:
             await asyncio.sleep(0.1)
-            if random.randint(0,8) == 2:
+            if random.randint(0,3) == 2:
                 await aprint("\033[38;2;0;255;255m\n"+"Notificacion falsa"+"\n\033[32m")
             time.sleep(4)
             
@@ -190,7 +190,7 @@ class client(slixmpp.ClientXMPP):
                 print("\033[31mError:\nSe ha excedido el tiempo de respuesta\033[0m")
                 
     async def contaco_specifico(self):
-        contacto = input("\033[36mIngresa el nombre del contacto que deseas agregar (sin @alumchat.xyz): \033[0m")
+        contacto = input("\033[36mIngresa el nombre del contacto que deseas consultar (sin @alumchat.xyz): \033[0m")
         contacto+='@alumchat.xyz'
         roster = self.client_roster
         contactos = roster.keys()
@@ -228,6 +228,14 @@ class client(slixmpp.ClientXMPP):
                 pass
             if op == 6:
                 await self.cambiar_mensaje_estado()
+            if op == 7:
+                pass
+            if op == 8:
+                pass
+            if op == 9:
+                print("\033[31mCerrando sesión...\033[0m")
+                self.disconnect()
+                self.is_connected = False
                 
             
             
