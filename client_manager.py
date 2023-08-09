@@ -38,15 +38,19 @@ class client(slixmpp.ClientXMPP):
         self.register_plugin('xep_0085') # Notifications
         self.register_plugin('xep_0004') # Data Forms
         self.register_plugin('xep_0060') # PubSub
+        
 
 
         # Chat GPT explico como funcionan los manejadores de eventos
         self.add_event_handler("session_start", self.LogIn)
         self.add_event_handler('subscription_request', self.suscripcion_entrante)
+        self.add_event_handler("message", self.message)
         
         
         
-    
+    async def message(self, msg):
+        if msg['type'] in ('chat', 'normal'):
+            await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {msg['from']}: \nMensaje: {msg['body']}\n \033[0m")
     
     async def LogIn(self,event):
         
@@ -280,6 +284,37 @@ class client(slixmpp.ClientXMPP):
             print('Estado:',show,'\033[96m Mensaje:',status)
             
             
+    async def menu_mensajes_priv(self):
+        enviar_a = await self.get_contacts()
+        await aprint('\033[92mLista de contactos:\033[0m')
+        cont=1
+        dicct = {}
+        for key in enviar_a.keys():
+            await aprint('\033[38;5;208m',cont,')\033[96m',key)
+            dicct[cont] = key
+            cont+=1
+            
+        valido = False
+        
+        while not valido:
+            try:
+                op = await ainput("\033[96mIngresa el número del contacto al que deseas enviar un mensaje: \033[0m")
+                op = int(op)
+                if op > 0 and op <= len(enviar_a):
+                    valido = True
+                else:
+                    await aprint("\033[31mIngresa un número válido\033[0m")
+            except ValueError:
+                await aprint("\033[31mIngresa un número válido\033[0m")
+        
+        try: 
+            men = await ainput("\033[96mIngresa el mensaje que deseas enviar: \033[0m")
+            self.send_message(mto = dicct[op], mbody=men,mtype='chat')
+            await aprint("\033[92mMensaje enviado\033[0m")
+        except IqError as e:
+            await aprint(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
+
+        
         
     async def async_menu(self):
         
@@ -293,7 +328,7 @@ class client(slixmpp.ClientXMPP):
             if op == 3:
                 await self.contaco_specifico()
             if op == 4:
-                pass
+                await self.menu_mensajes_priv()
             if op == 5:
                 pass
             if op == 6:
