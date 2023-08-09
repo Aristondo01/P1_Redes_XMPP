@@ -57,8 +57,12 @@ class client(slixmpp.ClientXMPP):
             print("\033[32mInicio de sesión exitoso\033[0m")
             roster = self.client_roster
             self.amigos = [jid.split("@")[0] for jid in roster.keys() if jid != self.name_domain]            
-            asyncio.create_task(self.print_async())
-            asyncio.create_task(self.async_menu())
+            self.conexiones = await self.get_contacts()
+           
+            self.amistad = asyncio.create_task(self.notif_amistad())
+            self.notif = asyncio.create_task(self.notif_conectado())
+            self.menu = asyncio.create_task(self.async_menu())
+            
             
             
         except IqError as errorIE:
@@ -75,27 +79,75 @@ class client(slixmpp.ClientXMPP):
             self.is_connected = False
             self.disconnect()
             
-    
-    
-    async def print_async(self):
-        while True:
-            await asyncio.sleep(0.1)
-            #if random.randint(0,3) == 2:
-            #    await aprint("\033[38;2;0;255;255m\n"+"Notificacion falsa"+"\n\033[32m")
+    async def get_contacts(self):
+        await self.get_roster()
+        roster = self.client_roster
+        concats = roster.keys()
+        concats = [jid for jid in roster.keys() if jid != self.name_domain]
+
+        
+        Lista_contactos = {}
+        
+        if not concats:
+            return Lista_contactos
             
-            await self.get_roster()
-            roster = self.client_roster
-            concats = [jid.split("@")[0] for jid in roster.keys() if jid != self.name_domain]
-            if concats == self.amigos:
-                continue
-            else:
-                for jid in concats:
-                    if jid not in self.amigos:
-                        await aprint("\033[38;2;0;255;255m\nNotificación :Se ha agregado a",jid.split("@")[0],"\033[0m\n")
-                        self.amigos.append(jid)
-                self.amigos = concats
+        for u in concats:
+            conn = roster.presence(u)
+            show = 'NC'
+            
+            for answer, pres in conn.items():
+                show,status = await self.estado_mensaje(pres)
                 
-            time.sleep(4)
+                if show == '\033[92mDisponible\033[0m':
+                    show = "YC"
+                else:
+                    show = "NC"
+                
+                
+            Lista_contactos[u] = show
+            
+        return Lista_contactos
+            
+    
+    async def notif_conectado(self):
+        while True:
+            try:
+                await asyncio.sleep(0.1)
+                compare = await self.get_contacts()
+                
+                for key in self.conexiones.keys():
+                    if key in compare.keys():
+                        if self.conexiones[key] != compare[key]:
+                            if self.conexiones[key] == "NC" and compare[key] == "YC":
+                                await aprint("\033[38;2;0;255;255m\nNotificación: "+key.split("@")[0]+" acaba de cambiar su estado a disponible\033[0m\n")            
+                self.conexiones = compare.copy()
+                time.sleep(2.5)
+            except IqTimeout:
+                print("\033[31mError:\nTu conexión con el servidor es mala\033[0m")
+            
+    
+    async def notif_amistad(self):
+        while True:
+            try:
+                await asyncio.sleep(0.1)
+                #if random.randint(0,3) == 2:
+                #    await aprint("\033[38;2;0;255;255m\n"+"Notificacion falsa"+"\n\033[32m")
+                
+                await self.get_roster()
+                roster = self.client_roster
+                concats = [jid.split("@")[0] for jid in roster.keys() if jid != self.name_domain]
+                if concats == self.amigos:
+                    continue
+                else:
+                    for jid in concats:
+                        if jid not in self.amigos:
+                            await aprint("\033[38;2;0;255;255m\nNotificación: Se ha agregado a",jid.split("@")[0],"\033[0m\n")
+                            self.amigos.append(jid)
+                    self.amigos = concats
+                    
+                time.sleep(2.5)
+            except IqTimeout:
+                print("\033[31mError:\nTu conexión con el servidor es mala\033[0m")
             
     async def signal_handler(self,signal,frame):
         self.disconnect()
@@ -184,7 +236,7 @@ class client(slixmpp.ClientXMPP):
         
         try:
             self.send_presence_subscription(pto = user_add)
-            print("Se ha enviado una solicitud de suscripción a:", user_add)
+            print("\033[96mSe ha enviado una solicitud de suscripción a:", user_add)
             await self.get_roster()
         except IqError as e:
             print(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
@@ -252,6 +304,9 @@ class client(slixmpp.ClientXMPP):
                 print("\033[31mCerrando sesión...\033[0m")
                 self.disconnect()
                 self.is_connected = False
+                self.menu.cancel()
+                self.notif.cancel()
+                self.menu.cancel()
                 
             
             
