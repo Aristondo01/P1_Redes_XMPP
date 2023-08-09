@@ -45,12 +45,23 @@ class client(slixmpp.ClientXMPP):
         self.add_event_handler("session_start", self.LogIn)
         self.add_event_handler('subscription_request', self.suscripcion_entrante)
         self.add_event_handler("message", self.message)
+        self.add_event_handler("groupchat_invite", self.auto_accept_invite)
         
         
+    async def auto_accept_invite(self, inv):
+        groupchat_jid = inv["from"]
+        await aprint(f"\033[38;2;0;255;255m\nNotificación: Se ha unido al grupo {groupchat_jid} \033[0m")
+        self.send_presence(pto=groupchat_jid, ptype="available")        
         
     async def message(self, msg):
         if msg['type'] in ('chat', 'normal'):
             await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {msg['from']}: \nMensaje: {msg['body']}\n \033[0m")
+       
+        if msg['type'] == ('groupchat'):
+            msg_string = str(msg['from'])
+            grup = msg_string.split("@")[0]
+            de = msg_string.split("/")[1]
+            await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {de} en el grupo {grup}: \nMensaje: {msg['body']}\n \033[0m")
     
     async def LogIn(self,event):
         
@@ -70,16 +81,16 @@ class client(slixmpp.ClientXMPP):
             
             
         except IqError as errorIE:
-            print("\033[31mError:\nNo se pudo iniciar sesión\033[0m")
+            print("\033[31m\nError:\nNo se pudo iniciar sesión\033[0m")
             self.is_connected = False
             self.disconnect()
         except IqTimeout:
-            print("\033[31mError:\nSe ha excedido el tiempo de respuesta\033[0m")
+            print("\033[31m\nError:\nSe ha excedido el tiempo de respuesta\033[0m")
             self.is_connected = False
             self.disconnect()
         
         except Exception as e:
-            print("\033[31mError:\n",e,"\033[0m")
+            print("\033[31m\nError:\n",e,"\033[0m")
             self.is_connected = False
             self.disconnect()
             
@@ -127,7 +138,7 @@ class client(slixmpp.ClientXMPP):
                 self.conexiones = compare.copy()
                 time.sleep(2.5)
             except IqTimeout:
-                print("\033[31mError:\nTu conexión con el servidor es mala\033[0m")
+                print("\033[31m\nError:\nTu conexión con el servidor es mala\033[0m")
             
     
     async def notif_amistad(self):
@@ -144,14 +155,14 @@ class client(slixmpp.ClientXMPP):
                     continue
                 else:
                     for jid in concats:
-                        if jid not in self.amigos:
+                        if jid not in self.amigos and "@" in jid:
                             await aprint("\033[38;2;0;255;255m\nNotificación: Se ha agregado a",jid.split("@")[0],"\033[0m\n")
                             self.amigos.append(jid)
                     self.amigos = concats
                     
                 time.sleep(2.5)
             except IqTimeout:
-                print("\033[31mError:\nTu conexión con el servidor es mala\033[0m")
+                print("\033[31m\nError:\nTu conexión con el servidor es mala\033[0m")
             
     async def signal_handler(self,signal,frame):
         self.disconnect()
@@ -243,9 +254,9 @@ class client(slixmpp.ClientXMPP):
             print("\033[96mSe ha enviado una solicitud de suscripción a:", user_add)
             await self.get_roster()
         except IqError as e:
-            print(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
+            print(f"\033[31m\nProblemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
         except IqTimeout:
-            print("\033[31mError:\nSe ha excedido el tiempo de respuesta\033[0m")
+            print("\033[31m\nError:\nSe ha excedido el tiempo de respuesta\033[0m")
             
     async def change_user(self,name):
         self.notificacion.append(name)
@@ -261,7 +272,7 @@ class client(slixmpp.ClientXMPP):
             except IqError as e:
                 print(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
             except IqTimeout:
-                print("\033[31mError:\nSe ha excedido el tiempo de respuesta\033[0m")
+                print("\033[31m\nError:\nSe ha excedido el tiempo de respuesta\033[0m")
                 
     async def contaco_specifico(self):
         contacto = input("\033[36mIngresa el nombre del contacto que deseas consultar (sin @alumchat.xyz): \033[0m")
