@@ -51,17 +51,18 @@ class client(slixmpp.ClientXMPP):
     async def auto_accept_invite(self, inv):
         groupchat_jid = inv["from"]
         await aprint(f"\033[38;2;0;255;255m\nNotificación: Se ha unido al grupo {groupchat_jid} \033[0m")
-        self.send_presence(pto=groupchat_jid, ptype="available")        
+        self.plugin['xep_0045'].join_muc(groupchat_jid, self.name)
+        self.send_presence(pto=groupchat_jid, ptype="available")       
         
     async def message(self, msg):
         if msg['type'] in ('chat', 'normal'):
             await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {msg['from']}: \nMensaje: {msg['body']}\n \033[0m")
-       
         if msg['type'] == ('groupchat'):
             msg_string = str(msg['from'])
             grup = msg_string.split("@")[0]
             de = msg_string.split("/")[1]
-            await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {de} en el grupo {grup}: \nMensaje: {msg['body']}\n \033[0m")
+            if de != self.name:
+                await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {de} en el grupo {grup}: \nMensaje: {msg['body']}\n \033[0m")
     
     async def LogIn(self,event):
         
@@ -71,7 +72,7 @@ class client(slixmpp.ClientXMPP):
             self.is_connected = True
             print("\033[32mInicio de sesión exitoso\033[0m")
             roster = self.client_roster
-            self.amigos = [jid.split("@")[0] for jid in roster.keys() if jid != self.name_domain]            
+            self.amigos = [jid for jid in roster.keys() if jid != self.name_domain]            
             self.conexiones = await self.get_contacts()
            
             self.amistad = asyncio.create_task(self.notif_amistad())
@@ -118,8 +119,8 @@ class client(slixmpp.ClientXMPP):
                 else:
                     show = "NC"
                 
-                
-            Lista_contactos[u] = show
+            if "@conference.alumchat.xyz" not in u:
+                Lista_contactos[u] = show
             
         return Lista_contactos
             
@@ -150,15 +151,15 @@ class client(slixmpp.ClientXMPP):
                 
                 await self.get_roster()
                 roster = self.client_roster
-                concats = [jid.split("@")[0] for jid in roster.keys() if jid != self.name_domain]
+                concats = [jid for jid in roster.keys() if jid != self.name_domain]
                 if concats == self.amigos:
                     continue
                 else:
                     for jid in concats:
-                        if jid not in self.amigos and "@" in jid:
+                        if jid not in self.amigos and "conference.alumchat.xyz" not in jid:
                             await aprint("\033[38;2;0;255;255m\nNotificación: Se ha agregado a",jid.split("@")[0],"\033[0m\n")
                             self.amigos.append(jid)
-                    self.amigos = concats
+                    self.amigos = concats.copy()
                     
                 time.sleep(2.5)
             except IqTimeout:
@@ -236,8 +237,8 @@ class client(slixmpp.ClientXMPP):
             for answer, pres in conn.items():
                 show,status = await self.estado_mensaje(pres)
                 
-                
-            Lista_contactos.append((u,show,status))
+            if "conference.alumchat.xyz" not  in u:
+                Lista_contactos.append((u,show,status))
         print('\n\033[92mLista de contactos:\033[0m')
         for i in range(len(Lista_contactos)):
             print('\033[38;5;208m',i+1,')\033[96m',end =" ")
@@ -301,9 +302,10 @@ class client(slixmpp.ClientXMPP):
         cont=1
         dicct = {}
         for key in enviar_a.keys():
-            await aprint('\033[38;5;208m',cont,')\033[96m',key)
-            dicct[cont] = key
-            cont+=1
+            if "conference.alumchat.xyz" not  in key:
+                await aprint('\033[38;5;208m',cont,')\033[96m',key)
+                dicct[cont] = key
+                cont+=1
             
         valido = False
         
@@ -325,6 +327,106 @@ class client(slixmpp.ClientXMPP):
         except IqError as e:
             await aprint(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
 
+    async def group_chat_menu(self):
+        salir = False
+        
+        while not salir:
+            await aprint("\033[92mBienvenido al menu de chat grupal elige una opción\033[0m")
+            await aprint("\033[38;5;208m1)\033[96m Crear sala\033[0m")
+            await aprint("\033[38;5;208m2)\033[96m Unirse a sala\033[0m")
+            await aprint("\033[38;5;208m3)\033[96m Enviar mensaje\033[0m")
+            await aprint("\033[38;5;208m4)\033[96m Invitar a sala\033[0m")
+            await aprint("\033[38;5;208m5)\033[96m Regresar al menu principal\033[0m")
+            
+            valido = False
+            
+            while not valido:
+                try:
+                    op = await ainput("\033[96mIngresa el número de la opción que deseas: \033[0m")
+                    op = int(op)
+                    if op > 0 and op <= 5:
+                        valido = True
+                    else:
+                        await aprint("\033[31mIngresa un número válido\033[0m")
+                except ValueError:
+                    await aprint("\033[31mIngresa un número válido\033[0m")
+            if op == 1:
+                try:
+                    room = await ainput("\033[96mIngresa el nombre de la sala a crear: \033[0m")
+                    room += '@conference.alumchat.xyz'
+                    self.plugin['xep_0045'].join_muc(room, self.name_domain)
+                    await asyncio.sleep(1)
+                    
+                    form = self.plugin['xep_0004'].make_form(ftype='submit', title='Config')
+
+                    form['muc#roomconfig_roomname'] = room
+                    form['muc#roomconfig_persistentroom'] = '1'
+                    form['muc#roomconfig_publicroom'] = '1'
+                    form['muc#roomconfig_membersonly'] = '0'
+                    form['muc#roomconfig_allowinvites'] = '1'
+                    form['muc#roomconfig_enablelogging'] = '1'
+                    form['muc#roomconfig_changesubject'] = '1'
+                    form['muc#roomconfig_maxusers'] = '100'
+                    form['muc#roomconfig_whois'] = 'anyone'
+                    form['muc#roomconfig_roomdesc'] = 'Chat_grupal'
+                    form['muc#roomconfig_roomowners'] = [self.name_domain]
+                    await self.plugin['xep_0045'].set_room_config(room, config=form)
+                    self.send_message(mto=room, mbody="Sala de chat creada", mtype='groupchat')
+                    
+                    await aprint("\033[92mSala creada exitosamente\033[0m")
+                except IqError as e:
+                    await aprint(f"\033[31mProblemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
+                except IqTimeout:
+                    await aprint("\033[31mNo se pudo conectar con el servidor\033[0m")
+                
+            elif op == 2:
+                try:
+                    room = await ainput("\033[96mIngresa el nombre de la sala a la que deseas unirte: \033[0m")
+                    self.plugin['xep_0045'].join_muc(room, self.name_domain)
+                    await asyncio.sleep(0.5)
+                    form = self.plugin['xep_0004'].make_form(ftype='submit', title='Config')
+                    
+                    await aprint("\033[92mTe has unido a la sala exitosamente\033[0m")
+                    
+                except IqError as e:
+                    await aprint(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
+                except IqTimeout:
+                    await aprint("\033[31mNo se pudo conectar con el servidor\033[0m")
+                    
+            elif op == 3:
+                grup =  await ainput("\033[96mIngresa el nombre del grupo: \033[0m")
+                grup += "@conference.alumchat.xyz"
+                men = await ainput("\033[96mIngresa el mensaje que deseas enviar: \033[0m")
+                
+                try:
+                    self.send_message(mto = grup, mbody=men,mtype='groupchat')
+                except IqTimeout:
+                    print("\033[31m\nError:\nTu conexión con el servidor es mala\033[0m")
+                except IqError:
+                    print("\033[31m]No se pudo enviar el mensaje")
+                
+            elif op == 4:
+                try:
+                    room = await ainput("\033[96mIngresa el nombre del chat grupal:  \033[0m")
+                    user = await ainput("\033[96mIngresa el nombre del usuario a invitar (sin @alumchat.xyz): \033[0m")
+                    user += '@alumchat.xyz'
+                    self.plugin['xep_0045'].invite(
+                        room = room+"@conference.alumchat.xyz",
+                        jid = user,
+                        reason = "Join the new group chat"
+                    )
+                    
+                except IqError as e:
+                    await aprint(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
+                except IqTimeout:
+                    await aprint("\033[31mNo se pudo conectar con el servidor\033[0m")
+            
+            elif op == 5:
+                salir = True
+
+
+        
+        
         
         
     async def async_menu(self):
@@ -341,7 +443,7 @@ class client(slixmpp.ClientXMPP):
             if op == 4:
                 await self.menu_mensajes_priv()
             if op == 5:
-                pass
+                await self.group_chat_menu()
             if op == 6:
                 await self.cambiar_mensaje_estado()
             if op == 7:
