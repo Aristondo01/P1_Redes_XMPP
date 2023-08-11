@@ -51,7 +51,7 @@ class client(slixmpp.ClientXMPP):
     async def auto_accept_invite(self, inv):
         groupchat_jid = inv["from"]
         await aprint(f"\033[38;2;0;255;255m\nNotificación: Se ha unido al grupo {groupchat_jid} \033[0m")
-        self.plugin['xep_0045'].join_muc(groupchat_jid, self.name)
+        self.plugin['xep_0045'].join_muc(groupchat_jid, self.boundjid.user)
         self.send_presence(pto=groupchat_jid, ptype="available")       
         
     async def message(self, msg):
@@ -136,6 +136,10 @@ class client(slixmpp.ClientXMPP):
                         if self.conexiones[key] != compare[key]:
                             if self.conexiones[key] == "NC" and compare[key] == "YC":
                                 await aprint("\033[38;2;0;255;255m\nNotificación: "+key.split("@")[0]+" acaba de cambiar su estado a disponible\033[0m\n")            
+                            if self.conexiones[key] == "YC" and compare[key] == "NC":
+                                await aprint("\033[38;2;0;255;255m\nNotificación: "+key.split("@")[0]+" se acaba de desconectar\033[0m\n")            
+                                
+                
                 self.conexiones = compare.copy()
                 time.sleep(2.5)
             except IqTimeout:
@@ -354,7 +358,7 @@ class client(slixmpp.ClientXMPP):
                 try:
                     room = await ainput("\033[96mIngresa el nombre de la sala a crear: \033[0m")
                     room += '@conference.alumchat.xyz'
-                    self.plugin['xep_0045'].join_muc(room, self.name_domain)
+                    await self.plugin['xep_0045'].join_muc(room, self.boundjid.user)
                     await asyncio.sleep(1)
                     
                     form = self.plugin['xep_0004'].make_form(ftype='submit', title='Config')
@@ -382,12 +386,14 @@ class client(slixmpp.ClientXMPP):
             elif op == 2:
                 try:
                     room = await ainput("\033[96mIngresa el nombre de la sala a la que deseas unirte: \033[0m")
-                    self.plugin['xep_0045'].join_muc(room, self.name_domain)
-                    await asyncio.sleep(0.5)
-                    form = self.plugin['xep_0004'].make_form(ftype='submit', title='Config')
+                    room += '@conference.alumchat.xyz'
                     
+                    
+                    self.plugin['xep_0045'].join_muc(room, self.boundjid.user)
                     await aprint("\033[92mTe has unido a la sala exitosamente\033[0m")
                     
+                            
+                            
                 except IqError as e:
                     await aprint(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
                 except IqTimeout:
