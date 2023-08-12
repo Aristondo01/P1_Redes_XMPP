@@ -9,6 +9,8 @@ from aioconsole.stream import aprint
 import threading
 import time
 import random
+import base64
+import aiofiles
 
 def register(client, password):
 
@@ -56,14 +58,27 @@ class client(slixmpp.ClientXMPP):
         
     async def message(self, msg):
         if msg['type'] in ('chat', 'normal'):
-            await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {msg['from']}: \nMensaje: {msg['body']}\n \033[0m")
+            if msg['body'].count("|") == 2 and "file" in msg['body'] :
+                try:
+                    msg_string = str(msg['from'])
+                    de = msg_string.split("@")[0]
+                    await aprint(f"\033[38;2;0;255;255m\nNotificación: ¡Archivo recibido de {de} mira tus archivos! \n\033[0m")
+                    extension = msg['body'].split("|")[1]
+                    data_64 = msg['body'].split("|")[2]
+                    data = base64.b64decode(data_64)
+                    with open(extension+"_recibido."+extension,'wb') as f:
+                        f.write(data)
+                except:
+                    await aprint("\033[31m]No se pudo recibir el archivo\033[0m")
+            else:
+                await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {msg['from']}: \nMensaje: {msg['body']}\n \033[0m")
         if msg['type'] == ('groupchat'):
             msg_string = str(msg['from'])
             grup = msg_string.split("@")[0]
             de = msg_string.split("/")[1]
             if de != self.name:
                 await aprint(f"\033[38;2;0;255;255m\nNotificación: Mensaje recibido de {de} en el grupo {grup}: \nMensaje: {msg['body']}\n \033[0m")
-    
+                            
     async def LogIn(self,event):
         
         try :
@@ -388,9 +403,11 @@ class client(slixmpp.ClientXMPP):
                     room = await ainput("\033[96mIngresa el nombre de la sala a la que deseas unirte: \033[0m")
                     room += '@conference.alumchat.xyz'
                     
-                    
-                    self.plugin['xep_0045'].join_muc(room, self.boundjid.user)
-                    await aprint("\033[92mTe has unido a la sala exitosamente\033[0m")
+                    try:
+                        self.plugin['xep_0045'].join_muc(room, self.boundjid.user)
+                        await aprint("\033[92mTe has unido a la sala exitosamente\033[0m")
+                    except e :
+                        await aprint("\033[31mLa sala pareceria que no existe\033[0m")
                     
                             
                             
@@ -406,6 +423,7 @@ class client(slixmpp.ClientXMPP):
                 
                 try:
                     self.send_message(mto = grup, mbody=men,mtype='groupchat')
+                    await aprint("\033[92mMensaje enviado\n\033[0m")
                 except IqTimeout:
                     print("\033[31m\nError:\nTu conexión con el servidor es mala\033[0m")
                 except IqError:
@@ -431,8 +449,63 @@ class client(slixmpp.ClientXMPP):
                 salir = True
 
 
+    async def envio_archivos(self):
+        enviar_a = await self.get_contacts()
+        await aprint('\033[92mLista de contactos:\033[0m')
+        cont=1
+        dicct = {}
+        op = -1
+        for key in enviar_a.keys():
+            if "conference.alumchat.xyz" not  in key:
+                await aprint('\033[38;5;208m',cont,')\033[96m',key)
+                dicct[cont] = key
+                cont+=1
+            
+        valido = False
         
+        while not valido:
+            try:
+                op = await ainput("\033[96mIngresa el número del contacto al que deseas enviar un mensaje: \033[0m")
+                op = int(op)
+                if op > 0 and op <= len(enviar_a):
+                    valido = True
+                else:
+                    await aprint("\033[31mIngresa un número válido\033[0m")
+            except ValueError:
+                await aprint("\033[31mIngresa un número válido\033[0m")
         
+        valido1 = False
+        while not valido1:
+            try:
+                nombre = await ainput("\033[96mIngresa el nombre del archivo: \033[0m")
+                extension = nombre.split(".")
+                if len(extension) == 2:
+                    valido1 = True
+                else:
+                    await aprint("\033[31mIngresa un nombre válido con extensión\033[0m")
+            except ValueError:
+                await aprint("\033[31mIngresa un nombre válido\033[0m")
+        try: 
+            file_path = "./"+nombre
+            file_content = await self.read_file(file_path)
+            data_64 = base64.b64encode(file_content).decode('utf-8')
+            mensaje = "file|"+extension[1]+"|"+data_64
+            self.send_message(mto=dicct[op], mbody=mensaje, mtype='chat')
+            await aprint('\033[92mArchivo enviado\033[0m')
+        except Exception as e:
+            await aprint("\033[31mNo se pudo enviar el archivo")
+            await aprint(e)
+
+        
+    async def read_file(self, file_path):
+        
+        try:
+            async with aiofiles.open(file_path, mode='rb') as f:
+                file_content = await f.read()
+                return file_content
+        except FileNotFoundError:
+            print("\033[31m\nError:\nEl archivo no existe\033[0m")
+            return None
         
         
     async def async_menu(self):
@@ -453,7 +526,7 @@ class client(slixmpp.ClientXMPP):
             if op == 6:
                 await self.cambiar_mensaje_estado()
             if op == 7:
-                pass
+                await self.envio_archivos()
             if op == 8:
                 print("\033[31mCerrando sesión...\033[0m")
                 self.disconnect()
