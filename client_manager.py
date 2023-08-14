@@ -11,6 +11,9 @@ import time
 import random
 import base64
 import aiofiles
+import logging
+
+#logging.basicConfig(level=logging.DEBUG, filename='debug_log.txt')
 
 def register(client, password):
 
@@ -62,9 +65,9 @@ class client(slixmpp.ClientXMPP):
                 try:
                     msg_string = str(msg['from'])
                     de = msg_string.split("@")[0]
-                    await aprint(f"\033[38;2;0;255;255m\nNotificación: ¡Archivo recibido de {de} mira tus archivos! \n\033[0m")
                     extension = msg['body'].split("|")[1]
                     data_64 = msg['body'].split("|")[2]
+                    await aprint(f"\033[38;2;0;255;255m\nNotificación: ¡Archivo recibido de tipo {extension} de {de}, mira tus archivos! \n\033[0m")
                     data = base64.b64decode(data_64)
                     with open(extension+"_recibido."+extension,'wb') as f:
                         f.write(data)
@@ -89,10 +92,13 @@ class client(slixmpp.ClientXMPP):
             roster = self.client_roster
             self.amigos = [jid for jid in roster.keys() if jid != self.name_domain]            
             self.conexiones = await self.get_contacts()
-           
-            self.amistad = asyncio.create_task(self.notif_amistad())
-            self.notif = asyncio.create_task(self.notif_conectado())
-            self.menu = asyncio.create_task(self.async_menu())
+            
+            try:
+                self.amistad = asyncio.create_task(self.notif_amistad())
+                self.notif = asyncio.create_task(self.notif_conectado())
+                self.menu = asyncio.create_task(self.async_menu())
+            except:
+                print("\033[31m\nError:\nAlgo inesperado ha pasado revisa tu conexión\033[0m")
             
             
             
@@ -143,7 +149,7 @@ class client(slixmpp.ClientXMPP):
     async def notif_conectado(self):
         while True:
             try:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.2)
                 compare = await self.get_contacts()
                 
                 for key in self.conexiones.keys():
@@ -164,7 +170,7 @@ class client(slixmpp.ClientXMPP):
     async def notif_amistad(self):
         while True:
             try:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.2)
                 #if random.randint(0,3) == 2:
                 #    await aprint("\033[38;2;0;255;255m\n"+"Notificacion falsa"+"\n\033[32m")
                 
@@ -371,10 +377,11 @@ class client(slixmpp.ClientXMPP):
                     await aprint("\033[31mIngresa un número válido\033[0m")
             if op == 1:
                 try:
+                    await asyncio.sleep(0.2)
                     room = await ainput("\033[96mIngresa el nombre de la sala a crear: \033[0m")
+                    room = room.lower()
                     room += '@conference.alumchat.xyz'
                     await self.plugin['xep_0045'].join_muc(room, self.boundjid.user)
-                    await asyncio.sleep(1)
                     
                     form = self.plugin['xep_0004'].make_form(ftype='submit', title='Config')
 
@@ -397,6 +404,8 @@ class client(slixmpp.ClientXMPP):
                     await aprint(f"\033[31mProblemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
                 except IqTimeout:
                     await aprint("\033[31mNo se pudo conectar con el servidor\033[0m")
+                except:
+                    await aprint("\033[31mNo se pudo crear la sala, esta sala ya existe\033[0m")
                 
             elif op == 2:
                 try:
@@ -428,6 +437,8 @@ class client(slixmpp.ClientXMPP):
                     print("\033[31m\nError:\nTu conexión con el servidor es mala\033[0m")
                 except IqError:
                     print("\033[31m]No se pudo enviar el mensaje")
+                except:
+                    print("\033[31m]No se pudo enviar el mensaje")
                 
             elif op == 4:
                 try:
@@ -441,7 +452,7 @@ class client(slixmpp.ClientXMPP):
                     )
                     
                 except IqError as e:
-                    await aprint(f"\033[Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
+                    await aprint(f"\033[31Problemas para enviar la solicitud: {e.iq['error']['text']}\033[0m")
                 except IqTimeout:
                     await aprint("\033[31mNo se pudo conectar con el servidor\033[0m")
             
@@ -510,30 +521,33 @@ class client(slixmpp.ClientXMPP):
         
     async def async_menu(self):
         
-        while self.is_connected:
-            op = await tm.menu_comunicacion()
-            
-            if op == 1:
-                await self.estado_contactos()
-            if op == 2:
-                await self.agregar_contacto()
-            if op == 3:
-                await self.contaco_specifico()
-            if op == 4:
-                await self.menu_mensajes_priv()
-            if op == 5:
-                await self.group_chat_menu()
-            if op == 6:
-                await self.cambiar_mensaje_estado()
-            if op == 7:
-                await self.envio_archivos()
-            if op == 8:
-                print("\033[31mCerrando sesión...\033[0m")
-                self.disconnect()
-                self.is_connected = False
-                self.menu.cancel()
-                self.notif.cancel()
-                self.menu.cancel()
+        try:
+            while self.is_connected:
+                op = await tm.menu_comunicacion()
+                
+                if op == 1:
+                    await self.estado_contactos()
+                if op == 2:
+                    await self.agregar_contacto()
+                if op == 3:
+                    await self.contaco_specifico()
+                if op == 4:
+                    await self.menu_mensajes_priv()
+                if op == 5:
+                    await self.group_chat_menu()
+                if op == 6:
+                    await self.cambiar_mensaje_estado()
+                if op == 7:
+                    await self.envio_archivos()
+                if op == 8:
+                    print("\033[31mCerrando sesión...\033[0m")
+                    self.disconnect()
+                    self.is_connected = False
+                    self.menu.cancel()
+                    self.notif.cancel()
+                    self.menu.cancel()
+        except:
+            await aprint("\033[31m\nError:\nAlgo inesperado ha pasado revisa tu conexión\033[0m")
                 
             
             
