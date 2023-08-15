@@ -1,6 +1,12 @@
 from aioconsole import ainput
 from aioconsole.stream import aprint
 
+
+"""
+Este archivo tiene como objetivo manejar la mayoria de inputs y menus para mostrar en la CLI
+"""
+
+# Obtiene el nombre de usuario y la contraseña del usuario
 def get_User_Password(accion):
     valido = False
     while not valido:
@@ -13,21 +19,7 @@ def get_User_Password(accion):
             print("\033[31m\nNo se pueden dejar campos vacíos\033[37m")
     return user, password
 
-def menu_principal():
-    valido = False
-    while not valido:
-        print("\033[32m\nBienvenido a la aplicación de mensajería \033[0m")
-        print("\033[36mLas opciones son las siguientes: ")
-        print("1. Administración de usuarios")
-        print("2. Comunicación")
-        print("3. Salir")
-        opcion = input("Ingrese la opción que desea:\033[0m")
-        if opcion == "1" or opcion == "2" or opcion == "3":
-            valido = True
-        else:
-            print("\033[31m\nOpción inválida\033[37m")
-    return int(opcion)
-
+# Menu principal para iniciar sesion o registrarse
 def menu_login(primera_vez):
     valido = False
     while not valido:
@@ -46,7 +38,8 @@ def menu_login(primera_vez):
             print("\033[31m Opción inválida\033[37m")
             
     return int(opcion)
-    
+
+#Menu interno para el cliente de slixmpp   
 async def menu_comunicacion():
     valido = False
     while not valido:

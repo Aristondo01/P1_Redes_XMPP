@@ -9,8 +9,10 @@ def menu_manager():
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     
     primera_vez = True
-    #while not finish:
     op =0
+    # Main.py corre el programa para el usuario depende de la opción elegida crea lo siguiente:
+    # Clase Cliente
+    # Delete Cliente
     while op != 4:
         op = tm.menu_login(primera_vez)
         primera_vez = False

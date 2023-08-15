@@ -15,6 +15,8 @@ class Delete_Cliente(slixmpp.ClientXMPP):
         await self.deleteaccount()
         self.disconnect()
         
+    
+    #Función para eliminar la cuenta    
     async def deleteaccount(self):
         response = self.Iq()
         response['type'] = 'set'
