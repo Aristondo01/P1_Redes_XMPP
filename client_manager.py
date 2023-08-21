@@ -369,7 +369,8 @@ class client(slixmpp.ClientXMPP):
                 await aprint('\033[38;5;208m',cont,')\033[96m',key)
                 dicct[cont] = key
                 cont+=1
-            
+        await aprint('\033[38;5;208m',cont,')\033[96m Ingresar manualmente')
+        dicct[cont] = "Ingresar manualmente"
         valido = False
         
         #verificar que la opción sea válida para seleccionar usuario a enviar
@@ -377,12 +378,15 @@ class client(slixmpp.ClientXMPP):
             try:
                 op = await ainput("\033[96mIngresa el número del contacto al que deseas enviar un mensaje: \033[0m")
                 op = int(op)
-                if op > 0 and op <= len(enviar_a):
+                if op > 0 and op <= len(enviar_a)+1:
                     valido = True
                 else:
                     await aprint("\033[31mIngresa un número válido\033[0m")
             except ValueError:
                 await aprint("\033[31mIngresa un número válido\033[0m")
+        
+        if op == cont: # Ingresar manualmente
+            dicct[cont] = await ainput("\033[96mIngresa el nombre del usuario al que deseas enviar un mensaje (incluir dominio): \033[0m")
         
         #Solicitar el mensaje a enviar
         try: 
